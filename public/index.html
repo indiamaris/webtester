@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>simple-test | Pentest Tool</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>simple-test</h1>
+    <p class="subtitle">Penetration testing tool for web applications</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-panel="jwt">JWT Forge</button>
+    <button class="tab" data-panel="cors">CORS Test</button>
+    <button class="tab" data-panel="xss">XSS Payloads</button>
+    <button class="tab" data-panel="upload">Upload Test</button>
+    <button class="tab" data-panel="api">API Probe</button>
+  </nav>
+
+  <main>
+    <!-- JWT Forge -->
+    <section id="panel-jwt" class="panel active">
+      <h2>JWT Forgery Tester</h2>
+      <p class="form-group" style="color: var(--text-muted); font-size: 0.85rem;">
+        Forge a JWT using a known secret. Use with hardcoded JWT_SECRET from your app config.
+      </p>
+      <div class="form-group">
+        <label>JWT Secret (hex or base64)</label>
+        <input type="password" id="jwt-secret" placeholder="e.g. 04882e084810ced287358fed6afa068f...">
+      </div>
+      <div class="form-group">
+        <label>Payload (JSON)</label>
+        <textarea id="jwt-payload" placeholder='{"id": 1, "email": "admin@test.com", "role": "admin"}'>{"id": 1, "email": "admin@test.com", "role": "admin"}</textarea>
+      </div>
+      <div class="flex-row">
+        <button onclick="forgeJwt()">Forge JWT</button>
+        <button class="secondary" onclick="testJwtApi()">Test Against API</button>
+      </div>
+      <div class="form-group">
+        <label>Forged Token</label>
+        <textarea id="jwt-output" readonly placeholder="Token will appear here"></textarea>
+      </div>
+      <div id="jwt-result" class="output" style="display: none;"></div>
+    </section>
+
+    <!-- CORS Test -->
+    <section id="panel-cors" class="panel">
+      <h2>CORS Misconfiguration Test</h2>
+      <p class="form-group" style="color: var(--text-muted); font-size: 0.85rem;">
+        Test if target API allows requests from arbitrary origins. Run from this page (different origin).
+      </p>
+      <div class="form-group">
+        <label>Target API URL</label>
+        <input type="url" id="cors-url" placeholder="https://your-strapi-api.com/api/endpoint">
+      </div>
+      <div class="form-group">
+        <label>Method</label>
+        <select id="cors-method">
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Include credentials (cookies)</label>
+        <input type="checkbox" id="cors-credentials">
+      </div>
+      <button onclick="testCors()">Test CORS</button>
+      <div id="cors-result" class="output" style="display: none;"></div>
+    </section>
+
+    <!-- XSS Payloads -->
+    <section id="panel-xss" class="panel">
+      <h2>XSS Payload Generator</h2>
+      <p class="form-group" style="color: var(--text-muted); font-size: 0.85rem;">
+        Copy payloads to inject in Strapi CMS or other v-html fields. Click to copy.
+      </p>
+      <div class="payload-list" id="xss-payloads"></div>
+      <div class="form-group" style="margin-top: 1rem;">
+        <label>Custom payload</label>
+        <input type="text" id="xss-custom" placeholder="<script>alert(1)</script>">
+        <button onclick="addCustomPayload()" style="margin-top: 0.5rem;">Add & Copy</button>
+      </div>
+    </section>
+
+    <!-- Upload Test -->
+    <section id="panel-upload" class="panel">
+      <h2>File Upload Vulnerability Test</h2>
+      <p class="form-group" style="color: var(--text-muted); font-size: 0.85rem;">
+        Test upload endpoints for missing validation (MIME, extension, size).
+      </p>
+      <div class="form-group">
+        <label>Upload endpoint URL</label>
+        <input type="url" id="upload-url" placeholder="https://your-api.com/upload-cv">
+      </div>
+      <div class="form-group">
+        <label>Form field name for file</label>
+        <input type="text" id="upload-field" value="files.cvFile" placeholder="files.cvFile">
+      </div>
+      <div class="form-group">
+        <label>Additional form data (JSON)</label>
+        <textarea id="upload-data" placeholder='{"FullName": "Test", "Email": "test@test.com"}'>{"FullName": "Test", "Email": "test@test.com"}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Test file (or use built-in payloads)</label>
+        <div class="file-input-wrap">
+          <input type="file" id="upload-file">
+        </div>
+        <div class="flex-row" style="margin-top: 0.5rem;">
+          <button class="secondary" onclick="uploadTest('exe')">Test .exe</button>
+          <button class="secondary" onclick="uploadTest('svg')">Test .svg (XSS)</button>
+          <button class="secondary" onclick="uploadTest('php')">Test .php</button>
+          <button class="secondary" onclick="uploadTest('html')">Test .html</button>
+          <button onclick="uploadCustom()">Upload Selected File</button>
+        </div>
+      </div>
+      <div id="upload-result" class="output" style="display: none;"></div>
+    </section>
+
+    <!-- API Probe -->
+    <section id="panel-api" class="panel">
+      <h2>API Probe</h2>
+      <p class="form-group" style="color: var(--text-muted); font-size: 0.85rem;">
+        Probe API endpoints with different auth headers and methods.
+      </p>
+      <div class="form-group">
+        <label>API URL</label>
+        <input type="url" id="api-url" placeholder="https://your-api.com/api/endpoint">
+      </div>
+      <div class="form-group">
+        <label>Authorization header (optional)</label>
+        <input type="text" id="api-auth" placeholder="Bearer &lt;token&gt;">
+      </div>
+      <div class="flex-row">
+        <button onclick="probeApi('')">No Auth</button>
+        <button onclick="probeApi('invalid')">Invalid Token</button>
+        <button onclick="probeApi('forged')">Use Forged JWT</button>
+        <button onclick="probeApi('token')">Use Auth Header</button>
+      </div>
+      <div id="api-result" class="output" style="display: none;"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
